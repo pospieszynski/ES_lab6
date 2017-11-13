@@ -1,0 +1,86 @@
+#define DELAY 300000
+
+#define SET_LED1         (1 << 29)
+#define SET_LED2         (1 << 8)
+#define SET_RIGHT_BUTTON (1 << 5)
+#define SET_LEFT_BUTTON  (1 << 4)
+#define SET_CLOCK        (1 << 4)
+
+volatile unsigned int *PIOB_PER  = (volatile unsigned int *) 0xFFFFF400;
+volatile unsigned int *PIOB_OER  = (volatile unsigned int *) 0xFFFFF410;
+volatile unsigned int *PIOB_SODR = (volatile unsigned int *) 0xFFFFF430; 
+volatile unsigned int *PIOB_CODR = (volatile unsigned int *) 0xFFFFF434;
+volatile unsigned int *PIOC_ODR  = (volatile unsigned int *) 0xFFFFF614;
+volatile unsigned int *PIOC_PDSR = (volatile unsigned int *) 0xFFFFF63C;
+volatile unsigned int *PIOC_PUER = (volatile unsigned int *) 0xFFFFF664;
+volatile unsigned int *PMC_PCER  = (volatile unsigned int *) 0xFFFFFC10;
+
+volatile unsigned int *PIOC_CODR = (volatile unsigned int *) 0xFFFFF634;
+volatile unsigned int *PIOC_SODR = (volatile unsigned int *) 0xFFFFF630;
+volatile unsigned int *PIOC_OER  = (volatile unsigned int *) 0xFFFFF610;
+volatile unsigned int *PIOC_PER  = (volatile unsigned int *) 0xFFFFF600;
+
+void dbgu_print_ascii (const char *a) {};
+void initLED();
+void blinkLED();
+void delay();
+void enableLED1();
+void disableLED1();
+void checkIfButtonPressed();
+
+int main () {
+	initLED();
+	while (1) {
+		blinkLED();
+	}
+}
+
+void initLED() {
+	*PIOC_PER  = (volatile unsigned int) SET_LED1;
+	*PIOC_OER  = (volatile unsigned int) SET_LED1;
+	*PIOC_SODR = (volatile unsigned int) SET_LED1;
+
+	*PIOB_PER  = (volatile unsigned int) SET_LED2;
+	*PIOB_OER  = (volatile unsigned int) SET_LED2;
+	*PIOB_SODR = (volatile unsigned int) SET_LED2;
+	
+	*PIOC_PER  = (volatile unsigned int) SET_RIGHT_BUTTON;
+	*PIOC_ODR  = (volatile unsigned int) SET_RIGHT_BUTTON;
+	*PIOC_PUER = (volatile unsigned int) SET_RIGHT_BUTTON;
+	
+	*PIOC_PER  = (volatile unsigned int) SET_LEFT_BUTTON;
+	*PIOC_ODR  = (volatile unsigned int) SET_LEFT_BUTTON;
+	*PIOC_PUER = (volatile unsigned int) SET_LEFT_BUTTON;
+	
+	*PMC_PCER  = (volatile unsigned int) SET_CLOCK;
+}
+
+void delay() {
+	volatile unsigned int increment = 0;
+	while (increment != DELAY) {
+		increment++;
+		checkIfButtonPressed();
+	}
+}
+void enableLED1() {
+	*PIOC_CODR = (volatile unsigned int) SET_LED1;
+}
+void disableLED1() {
+	*PIOC_SODR = (volatile unsigned int) SET_LED1;
+}
+
+void blinkLED() {
+	delay();
+	enableLED1();
+	delay();
+	disableLED1();
+}
+
+void checkIfButtonPressed() {	
+	if(!(*PIOC_PDSR & SET_LEFT_BUTTON)) {
+		*PIOB_SODR = SET_LED2;
+	}
+	if(!(*PIOC_PDSR & SET_RIGHT_BUTTON)) {
+		*PIOB_CODR = SET_LED2;
+	}
+}
